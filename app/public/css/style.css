@@ -1,0 +1,33 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+body{
+    font-family: 'Montserrat', sans-serif;
+}
+#login{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px;
+    background-color: #2B3467;
+    border-radius: 10px;
+}
+#logo img{
+    display: block;
+    width: 100%;
+}
+.form-label{
+    color: #BAD7E9;
+}
+#form_info button{
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+}
+#btn_register{
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+}
