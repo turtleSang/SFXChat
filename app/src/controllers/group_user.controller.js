@@ -6,7 +6,8 @@ const getListGroup = async (req, res) => {
     let [listGroup] = await sequelize.query(
         ` select chatapp.groups.groupname, chatapp.groups.id from chatapp.groups_users
         inner join chatapp.groups on chatapp.groups_users.group_id = chatapp.groups.id
-        where chatapp.groups_users.user_id = "${id}" `
+        where chatapp.groups_users.user_id = "${id}" order by chatapp.groups.createdAt desc
+         `
     );
     res.status(200).send(listGroup);
 };

@@ -83,9 +83,11 @@ const addEventGroupName = () => {
     }
 }
 
+//render user
 const renderUserInfo = (user) => {
     getEle("user_name").innerHTML = user.username;
 }
+
 
 const findUser = async (username, token) => {
     try {
@@ -102,6 +104,7 @@ const findUser = async (username, token) => {
     }
 }
 
+//Create group after fill form
 const createGroup = async (idUserCreate, listUserID, groupname) => {
     listID = [idUserCreate];
     listUserID.forEach(userId => {
@@ -138,12 +141,13 @@ const renderNewGroup = (groupId, groupname, socket)=>{
     socket.emit("join to room", [groupId]);    
 }
 
+//Delete user chosen
 const deletetUser = (e) => {
     let element = e.currentTarget;
     let parrentElement = element.parentNode;
     parrentElement.remove();
 }
-
+//Chosen User to send
 const chooseUser = (e) => {
     let chooseElement = e.target;
     let id = chooseElement.getAttribute("data-user-id");
