@@ -27,36 +27,34 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 io.on('connection', async (socket) => {
+    
     socket.on("join to room", (listRoomID) => {
         listRoomID.forEach(async roomId => {
             socket.join(roomId);
-        });
-        socket.on("send mess to server", async ({group_id, user_id, user_name, text})=>{
-            let newText = await Messenger.create({group_id, user_id, text});
-            let {createdAt}= newText;
-            let createDate = formatDate('dd/MM/yyyy-hh:mm', createdAt);
-            //send mess to sender
-            socket.emit("send mess to sender", {
-                group_id,
-                text,
-                createDate
-            });
-            let roomId = Number(group_id);
-            //send mess to reciver
-            socket.broadcast.to(roomId).emit("send mess to reciver", {
-                group_id,
-                user_name,
-                text,
-                createDate
-            });
-            
-        });
-        socket.on("create Group", (newGroup)=>{
-            console.log(newGroup);
-            io.emit("send new group to client", newGroup)
-        })
-       
+        });              
     });
+    socket.on("create Group", (newGroup)=>{
+        socket.broadcast.emit("send new group to client", newGroup);
+    });
+    socket.on("send mess to server", async ({group_id, user_id, user_name, text})=>{
+        let newText = await Messenger.create({group_id, user_id, text});
+        let {createdAt}= newText;
+        let createDate = formatDate('dd/MM/yyyy-hh:mm', createdAt);
+        //send mess to sender
+        socket.emit("send mess to sender", {
+            group_id,
+            text,
+            createDate
+        });
+        let roomId = Number(group_id);
+        //send mess to reciver
+        socket.broadcast.to(roomId).emit("send mess to reciver", {
+            group_id,
+            user_name,
+            text,
+            createDate
+        });            
+    }); 
     
 });
 

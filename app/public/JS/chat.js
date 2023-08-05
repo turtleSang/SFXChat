@@ -122,6 +122,22 @@ const createGroup = async (idUserCreate, listUserID, groupname) => {
     }
 }
 
+//render NewGroup
+const renderNewGroup = (groupId, groupname, socket)=>{
+    //render listchat
+    let listChatGroup = `<li  data-room="${groupId}" class="list-group-item room-item ">${groupname}</li>`;
+    listChatGroup += getEle('list_chat_group').innerHTML;
+    getEle("list_chat_group").innerHTML = listChatGroup;
+    addEventGroupName();
+    //render Chat Content
+    let chatContent = 
+    `
+        <div id="${groupId}" class="messenger_chat"><h1>${groupname}</h1></div>
+    `
+    getEle('messenger_content').innerHTML += chatContent;
+    socket.emit("join to room", [groupId]);    
+}
+
 const deletetUser = (e) => {
     let element = e.currentTarget;
     let parrentElement = element.parentNode;
@@ -184,6 +200,8 @@ getEle("new_group_name").onblur = () => {
     }
 }
 
+
+
 //clear form Create
 const clearForm = () => {
     getEle("input_search_user").value = '';
@@ -213,9 +231,9 @@ window.onload = async () => {
                 listIdChosen = [...listIdChosen, eleChosen.getAttribute("data-user-id")];
             }
             let newGroup = await createGroup(user.id, listIdChosen, groupname);
-            renderGroupChat(token, socket);
+            //render
+            renderNewGroup(newGroup.data.id, groupname, socket);
             getEle("close_form_create").click();
-            console.log(newGroup);
             socket.emit("create Group", newGroup.data);
         } else {
             getEle("nofi_err").className = "alert alert-danger";
@@ -240,7 +258,7 @@ window.onload = async () => {
 
     //Check new group to add
     socket.on("send new group to client", async (newGroup) => {
-        let { id: groupId } = newGroup;
+        let { id: groupId, groupname } = newGroup;
         console.log(groupId);
         let checkRender = await axios({
             method: 'get',
@@ -251,7 +269,7 @@ window.onload = async () => {
         })
         const { result } = checkRender.data
         if (result) {
-            renderGroupChat(token, socket);
+            renderNewGroup(groupId, groupname, socket);
         }
     })
 
