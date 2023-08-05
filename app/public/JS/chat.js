@@ -46,7 +46,7 @@ const renderGroupChat = async (token, socket) => {
     for (const item of listGroupChat) {
         let { groupname, id } = item;
         contentListGroup += `<li  data-room="${id}" class="list-group-item room-item ">${groupname}</li>`;
-        contentChat += `<div id="${id}" class="messenger_chat"><h1>${groupname}</h1></div>`;
+        contentChat += `<div id="${id}" class="messenger_chat"><h1></h1></div>`;
         listRoomID = [...listRoomID, id]
     }
     socket.emit("join to room", listRoomID);
@@ -113,7 +113,7 @@ const createGroup = async (idUserCreate, listUserID, groupname) => {
     try {
         let createGroup = await axios({
             method: "post",
-            url: `http://localhost:3000/api/v1/listgroup/create`,
+            url: `/api/v1/listgroup/create`,
             data: {
                 groupname,
                 listID
@@ -204,6 +204,48 @@ getEle("new_group_name").onblur = () => {
     }
 }
 
+//Render old messenger
+const renderMessenger = async (token, client_id) =>{
+    let res = await axios({
+        method: 'get',
+        url: "api/v1/messenger/get",
+        headers:{
+            token
+        }
+    });
+    let listMessenger = res.data
+    for (const messenger of listMessenger) {
+        let {username,user_id,group_id,createdAt,text} = messenger;
+        if (client_id == user_id) {
+            getEle(group_id).innerHTML +=
+            `
+            <div class="mess_sender">
+                <div class="mess_sender_content">
+                    <p class="sender_info">
+                        <span class="sender_name">You</span>
+                        <span class="date_create">${createdAt}</span>
+                    </p>
+                    <p class="sender_text">${text}</p>
+                </div>
+            </div>
+            `
+        }else{
+            getEle(group_id).innerHTML += 
+            `
+            <div class="mess_reciver">
+                <div class="mess_reciver_content">
+                    <p class="sender_info">
+                        <span class="sender_name">${username}</span>
+                        <span class="date_create">${createdAt}</span>
+                    </p>
+                    <p class="reciver_text">${text}</p>
+                </div>
+            </div>
+            `
+        }
+    }
+};
+
 
 
 //clear form Create
@@ -224,6 +266,7 @@ window.onload = async () => {
     //render Page
     renderUserInfo(user);
     renderGroupChat(token, socket);
+    renderMessenger(token, user.id);
 
 
     getEle("create_group").onclick = async () => {
