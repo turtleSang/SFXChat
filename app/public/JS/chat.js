@@ -52,21 +52,40 @@ const renderGroupChat = async (token, socket) => {
     socket.emit("join to room", listRoomID);
     getEle('list_chat_group').innerHTML = contentListGroup;
     getEle('messenger_content').innerHTML = contentChat;
-    addEventGroupName();
+    addEventGroupName(token);
 }
 
 //Render Info of group selected
-const renderChatInfo = (roomId, name_group) => {
+const renderChatInfo = async (group_id, name_group, token) => {
     let chats = getEle("messenger_content").children;
     for (const item of chats) {
         item.style.display = "none";
     }
-    getEle(roomId).style.display = "block";
-    getEle("name_group").innerHTML = name_group
+    getEle(group_id).style.display = "block";
+    //render group info
+    getEle("name_group").innerHTML = name_group;
+    try {
+        let res = await axios({
+            method: 'get',
+            url: `/api/v1/listgroup//getlistuser/${group_id}`,
+            headers:{
+                token
+            }
+        });
+        let listUsers = res.data;
+        let contentUsers = '';
+        for (const user of listUsers) {
+            contentUsers += `<li data-user-id="${user.id}" class="list-group-item">${user.username}</li>`
+        }
+        getEle("out_group").setAttribute("data-group-id", group_id);
+        getEle("list_user_Group").innerHTML = contentUsers;
+    } catch (error) {
+        window.location.replace("/index.html");
+    }
 }
 
 //add event for item of groupchat
-const addEventGroupName = () => {
+const addEventGroupName = (token) => {
     let groupName = getEle("list_chat_group");
     let group_name = groupName.children;
     for (const element of group_name) {
@@ -76,9 +95,9 @@ const addEventGroupName = () => {
                 item.classList.remove("active");
             }
             element.classList.add("active");
-            let roomId = element.getAttribute("data-room");
+            let group_id = element.getAttribute("data-room");
             let name_group = element.innerHTML
-            renderChatInfo(roomId, name_group);
+            renderChatInfo(group_id, name_group, token);
         })
     }
 }
@@ -88,7 +107,7 @@ const renderUserInfo = (user) => {
     getEle("user_name").innerHTML = user.username;
 }
 
-
+//find user to add
 const findUser = async (username, token) => {
     try {
         let listUser = await axios({
@@ -126,12 +145,12 @@ const createGroup = async (idUserCreate, listUserID, groupname) => {
 }
 
 //render NewGroup
-const renderNewGroup = (groupId, groupname, socket)=>{
+const renderNewGroup = (groupId, groupname, socket, token)=>{
     //render listchat
     let listChatGroup = `<li  data-room="${groupId}" class="list-group-item room-item ">${groupname}</li>`;
     listChatGroup += getEle('list_chat_group').innerHTML;
     getEle("list_chat_group").innerHTML = listChatGroup;
-    addEventGroupName();
+    addEventGroupName(token);
     //render Chat Content
     let chatContent = 
     `
@@ -147,6 +166,7 @@ const deletetUser = (e) => {
     let parrentElement = element.parentNode;
     parrentElement.remove();
 }
+
 //Chosen User to send
 const chooseUser = (e) => {
     let chooseElement = e.target;
@@ -174,6 +194,7 @@ const chooseUser = (e) => {
     getEle("input_search_user").value = '';
     nofiNull("nofi_list_user", "", false);
 }
+
 //check null nofi 
 const nofiNull = (idElement, fields, condition) => {
     if (condition) {
@@ -183,13 +204,6 @@ const nofiNull = (idElement, fields, condition) => {
         getEle(idElement).className = "";
         getEle(idElement).innerHTML = ``;
     }
-}
-
-//check null user List
-getEle("input_search_user").onblur = () => {
-    let listChossen = getEle("list_chossen").children;
-    let checkNull = listChossen.length === 0;
-    nofiNull("nofi_list_user", "Member", checkNull);
 }
 
 //check null groupname
@@ -246,8 +260,6 @@ const renderMessenger = async (token, client_id) =>{
     }
 };
 
-
-
 //clear form Create
 const clearForm = () => {
     getEle("input_search_user").value = '';
@@ -259,6 +271,13 @@ const clearForm = () => {
     getEle("nofi_err").innerHTML = "";
 }
 
+//log out
+getEle("log_out").onclick  = () =>{
+    let token = document.cookie.split("=")[1];
+    document.cookie = `token=${token}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    window.location.replace("/index.html");
+}
+
 window.onload = async () => {
     let token = document.cookie.split("=")[1];
     let user = await verify(token);
@@ -267,7 +286,7 @@ window.onload = async () => {
     renderUserInfo(user);
     renderGroupChat(token, socket);
     renderMessenger(token, user.id);
-
+    
 
     getEle("create_group").onclick = async () => {
         let listEleChosen = getEle('list_chossen').getElementsByTagName("li");

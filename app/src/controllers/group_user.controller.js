@@ -53,4 +53,21 @@ const checkRenderNewGroup = async (req, res) =>{
     
 }
 
-module.exports = { getListGroup, createGroup, checkRenderNewGroup};
+const getMemberOfGroup = async (req, res) =>{
+    const {groupId} = req.params;
+    const {user} = req.body;
+    let [listUser] = await sequelize.query(
+        `SELECT chatapp.users.username, chatapp.users.id FROM chatapp.groups_users
+        inner join chatapp.users on chatapp.groups_users.user_id = chatapp.users.id
+        where chatapp.groups_users.group_id = ${groupId};
+        `
+    );
+    for (const member of listUser) {
+        if (member.id == user.id) {
+            member.username = "You";
+        }
+    }
+    res.status(200).send(listUser);
+}
+
+module.exports = { getListGroup, createGroup, checkRenderNewGroup, getMemberOfGroup};
