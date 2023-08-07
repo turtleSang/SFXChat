@@ -148,3 +148,14 @@ header #logo img {
     display: inline-block;
     text-align: left;
 }
+
+.mess_nofi .reciver_text{
+    text-align: center;
+    font-weight: 700;
+    color: #9EB7D0;
+}
+
+#group_leave{
+    font-weight: 700;
+    color: #2b3467;
+}

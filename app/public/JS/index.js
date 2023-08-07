@@ -17,11 +17,6 @@ if (token) {
        console.log(err);
     });
 }
-
-
-
-
-
 document.getElementById("btn_login").onclick = () => {
     const phonenumber = document.getElementById('phonenumber').value;
     const password = document.getElementById('password').value;

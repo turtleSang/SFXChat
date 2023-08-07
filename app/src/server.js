@@ -9,7 +9,7 @@ const { Server } = require("socket.io");
 //Service Model
 const { getGroup } = require("./service/group.services");
 //Model
-const {Messenger} = require("./models");
+const {Messenger, Group} = require("./models");
 //fomat date
 const formatDate = require("date-format");
 const { NUMBER } = require("sequelize");
@@ -29,7 +29,7 @@ const io = new Server(server);
 io.on('connection', async (socket) => {
     
     socket.on("join to room", (listRoomID) => {
-        listRoomID.forEach(async roomId => {
+        listRoomID.forEach(roomId => {
             socket.join(roomId);
         });              
     });
@@ -54,7 +54,17 @@ io.on('connection', async (socket) => {
             text,
             createDate
         });            
-    }); 
+    });
+    socket.on("leave group", async ({group_id, username, user_id})=>{
+        let group = await Group.findOne({
+            where:{
+                id: group_id
+            }
+        });
+        let {groupname} = group;
+        socket.broadcast.to(group_id).emit("send people leave group", {groupname, group_id, username, user_id})
+        socket.leave(group_id);
+    }) 
     
 });
 

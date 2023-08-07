@@ -68,7 +68,7 @@ const renderChatInfo = async (group_id, name_group, token) => {
         let res = await axios({
             method: 'get',
             url: `/api/v1/listgroup//getlistuser/${group_id}`,
-            headers:{
+            headers: {
                 token
             }
         });
@@ -77,8 +77,23 @@ const renderChatInfo = async (group_id, name_group, token) => {
         for (const user of listUsers) {
             contentUsers += `<li data-user-id="${user.id}" class="list-group-item">${user.username}</li>`
         }
-        getEle("out_group").setAttribute("data-group-id", group_id);
         getEle("list_user_Group").innerHTML = contentUsers;
+        //removeButton
+        let btnDelete = getEle("out_group");
+        if (btnDelete) {
+            btnDelete.remove();
+        }
+
+        getEle("group_info").innerHTML +=
+            `
+        <button class="btn btn-danger" id="out_group" data-group-id="${group_id}" data-bs-toggle="modal" data-bs-target="#delete_group">
+                Leave Group
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </button>
+        `
+        getEle("out_group").addEventListener("click", (event) => {
+            leaveGroup(event);
+        })
     } catch (error) {
         window.location.replace("/index.html");
     }
@@ -145,19 +160,19 @@ const createGroup = async (idUserCreate, listUserID, groupname) => {
 }
 
 //render NewGroup
-const renderNewGroup = (groupId, groupname, socket, token)=>{
+const renderNewGroup = (groupId, groupname, socket, token) => {
     //render listchat
     let listChatGroup = `<li  data-room="${groupId}" class="list-group-item room-item ">${groupname}</li>`;
     listChatGroup += getEle('list_chat_group').innerHTML;
     getEle("list_chat_group").innerHTML = listChatGroup;
     addEventGroupName(token);
     //render Chat Content
-    let chatContent = 
-    `
+    let chatContent =
+        `
         <div id="${groupId}" class="messenger_chat"><h1>${groupname}</h1></div>
     `
     getEle('messenger_content').innerHTML += chatContent;
-    socket.emit("join to room", [groupId]);    
+    socket.emit("join to room", [groupId]);
 }
 
 //Delete user chosen
@@ -219,20 +234,20 @@ getEle("new_group_name").onblur = () => {
 }
 
 //Render old messenger
-const renderMessenger = async (token, client_id) =>{
+const renderMessenger = async (token, client_id) => {
     let res = await axios({
         method: 'get',
         url: "api/v1/messenger/get",
-        headers:{
+        headers: {
             token
         }
     });
     let listMessenger = res.data
     for (const messenger of listMessenger) {
-        let {username,user_id,group_id,createdAt,text} = messenger;
+        let { username, user_id, group_id, createdAt, text } = messenger;
         if (client_id == user_id) {
             getEle(group_id).innerHTML +=
-            `
+                `
             <div class="mess_sender">
                 <div class="mess_sender_content">
                     <p class="sender_info">
@@ -243,9 +258,9 @@ const renderMessenger = async (token, client_id) =>{
                 </div>
             </div>
             `
-        }else{
-            getEle(group_id).innerHTML += 
-            `
+        } else {
+            getEle(group_id).innerHTML +=
+                `
             <div class="mess_reciver">
                 <div class="mess_reciver_content">
                     <p class="sender_info">
@@ -272,22 +287,66 @@ const clearForm = () => {
 }
 
 //log out
-getEle("log_out").onclick  = () =>{
+getEle("log_out").onclick = () => {
     let token = document.cookie.split("=")[1];
     document.cookie = `token=${token}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     window.location.replace("/index.html");
 }
 
+//send mess
+const sendMess = (user, socket) => {
+    let groupToSend = getEle("list_chat_group").querySelector(".active");
+    let text = getEle("input_mess").value;
+    if (groupToSend && text) {
+        let group_id = groupToSend.getAttribute("data-room");
+        let user_id = user.id;
+        let user_name = user.username;
+        socket.emit("send mess to server", {
+            group_id,
+            user_id,
+            user_name,
+            text
+        });
+    }
+    getEle("input_mess").value = '';
+};
+
+//leave group
+const leaveGroup = (event) => {
+    let btnDelete = event.currentTarget;
+    let groupId = btnDelete.getAttribute("data-group-id");
+    let groupName = getEle("name_group").innerHTML;
+    getEle("group_leave").innerHTML = groupName;
+    getEle("confirm_delete").setAttribute("data-group-id", groupId);
+    getEle("out_group").remove();
+    getEle("name_group").innerHTML ='';
+    getEle("list_user_Group").innerHTML='';
+}
+const deleteGroup = (groupId) => {
+    let ListChatGroup = getEle("list_chat_group").childNodes;
+    ListChatGroup.forEach(element => {
+        let room_id = element.getAttribute("data-room");
+        if (room_id == groupId) {
+            element.remove();
+        }
+    });
+    getEle(groupId).remove();
+}
+
 window.onload = async () => {
+    //Verify token
     let token = document.cookie.split("=")[1];
     let user = await verify(token);
+    let { id: user_id, username, phonenumber } = user;
+
+    //Join socket
     let socket = io();
     //render Page
     renderUserInfo(user);
     renderGroupChat(token, socket);
     renderMessenger(token, user.id);
-    
 
+    //Create Group
     getEle("create_group").onclick = async () => {
         let listEleChosen = getEle('list_chossen').getElementsByTagName("li");
         let groupname = document.getElementById("new_group_name").value;
@@ -321,6 +380,49 @@ window.onload = async () => {
         }
     }
 
+    //Leave Group
+    getEle("confirm_delete").onclick = async () => {
+        let group_id = Number(getEle("confirm_delete").getAttribute("data-group-id"));
+        // let res = await axios({
+        //     method: 'delete',
+        //     url: `api/v1/listGroup/leavegroup/${group_id}`,
+        //     headers: {
+        //         token
+        //     }
+        // });
+        // // let {state} = res.data;
+        // // if (state) {
+        deleteGroup(group_id);
+        socket.emit("leave group", { group_id, username, user_id });
+        getEle("cancel_delete").click();
+
+    };
+
+    // recive people out groups
+    socket.on("send people leave group", ({ groupname, group_id, username, user_id }) => {
+        //delete user form list;
+        let eleGroupName = getEle("name_group");
+        if (eleGroupName.innerHTML === groupname) {
+            //delete user leave
+            let eleUsers = getEle("list_user_Group").childNodes;
+            eleUsers.forEach(element => {
+                if (element.getAttribute("data-user-id") == user_id) {
+                    element.remove();
+                }
+            });
+        }
+        //Send Nofito group people has left
+        let messNofi =
+        `
+            <div class="mess_nofi">
+                <div class="mess_reciver_content">
+                    <p class="reciver_text">${username} has left group</p>
+                </div>
+            </div>
+        `;
+        getEle(group_id).innerHTML += messNofi
+    })
+
 
     //Check new group to add
     socket.on("send new group to client", async (newGroup) => {
@@ -339,25 +441,20 @@ window.onload = async () => {
         }
     })
 
-    getEle("send_mess").onclick = () => {
-        let groupToSend = getEle("list_chat_group").querySelector(".active");
-        let text = getEle("input_mess").value;
-        if (groupToSend && text) {
-            let group_id = groupToSend.getAttribute("data-room");
-            let user_id = user.id;
-            let user_name = user.username;
-            socket.emit("send mess to server", {
-                group_id,
-                user_id,
-                user_name,
-                text
-            });
+    //send mess to server
+    getEle("send_mess").addEventListener("click", () => {
+        sendMess(user, socket);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            getEle("send_mess").click();
         }
-        getEle("input_mess").value ='';
-    };
-    socket.on("send mess to sender", ({group_id, text, createDate}) =>{
-        let messengerContent = 
-        `
+    });
+
+    //render mess send
+    socket.on("send mess to sender", ({ group_id, text, createDate }) => {
+        let messengerContent =
+            `
             <div class="mess_sender">
                 <div class="mess_sender_content">
                     <p class="sender_info">
@@ -370,9 +467,10 @@ window.onload = async () => {
         `;
         getEle(group_id).innerHTML += messengerContent;
     });
-    socket.on("send mess to reciver", ({group_id, user_name, text, createDate}) =>{
-        let messengerContent = 
-        `
+    //recive mess send
+    socket.on("send mess to reciver", ({ group_id, user_name, text, createDate }) => {
+        let messengerContent =
+            `
             <div class="mess_reciver">
                 <div class="mess_reciver_content">
                     <p class="sender_info">

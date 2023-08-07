@@ -70,4 +70,29 @@ const getMemberOfGroup = async (req, res) =>{
     res.status(200).send(listUser);
 }
 
-module.exports = { getListGroup, createGroup, checkRenderNewGroup, getMemberOfGroup};
+const leaveGroup = async (req, res) =>{
+    let {groupId:group_id} = req.params;
+    let {user} = req.body;
+    let {id:user_id} = user;
+    console.log(group_id, user_id);
+    try {
+        await Groups_users.destroy({
+            where:{
+                group_id,
+                user_id
+            }
+        });
+        res.status(200).send({
+            state: true,
+            comment: "has left group"
+        });
+    } catch (error) {
+        res.status(500).send({
+            state: false,
+            comment: error,
+        });
+    }
+    
+}
+
+module.exports = { getListGroup, createGroup, checkRenderNewGroup, getMemberOfGroup, leaveGroup};
